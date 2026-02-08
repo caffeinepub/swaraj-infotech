@@ -1,0 +1,902 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectStateVersion": 25,
+  "summary": "Design a modern premium Android UI for the Swaraj Infotech app (dark theme, bright orange gradient accents, glassmorphism floating cards, rounded corners, soft shadows, clean typography, smooth animations, splash screen with centered logo + animated orange gradient ring), update all branding and logos to “Swaraj Infotech”, remove all Caffeine AI branding from the app, implement an OTP-based phone authentication flow (phone input → request OTP → enter/resend OTP → new-user profile creation) that routes to Home after login, and implement a Questions engine + Practice Mode (chapter selection, question list, question view with hint/answer/explanation, bookmarking, progress, offline cache) backed by questions and user-answer APIs, plus a Chapter Test flow (chapter selection → timed randomized test with mark-for-review → submit → results + review → history) backed by /test APIs, and add an Exam Mode with strict real-exam simulation for MSCIT (15 questions/15 min) and GCC-TBC (25 questions/25 min) including timer auto-submit, mark-for-review, no repeats within an attempt, results + weak chapters, and attempt history/review backed by /exam APIs. Additionally, build a separate standalone Admin Panel web dashboard with secure admin login (email/password, optional 2FA), role-based access (admin/moderator), full question/chapters/categories management (add/edit/delete/search/filter), bulk question upload via CSV with preview/validation and sample CSV template, users & results management (user list, test history, export CSV), in-app notifications composer, and backend backup/restore via JSON export/import with API endpoints for all admin operations. Also provide production-ready PostgreSQL DDL for documentation and mirror/emulate the same table-like schema inside the Motoko canister implementation, including Postgres-style middleware concepts (rate limiting and logging). Add viral & utility features: WhatsApp share with prefilled text + Play Store link, optional referral codes, push notifications for daily quiz reminders/new content, analytics dashboards (downloads/active users/retention), and an in-app feedback form to send to an admin email.",
+  "architectural_notes": [
+    "OTP auth flow decisions: create profile only for new users after OTP verification; SMS stub endpoint always succeeds; post-login route goes to Home.",
+    "Persist auth token locally after successful OTP verification.",
+    "Backend profile fields required: user_id, name, phone, course, created_at (exam date optional per UI but not listed as required backend field).",
+    "Define dashboard navigation map including bottom-nav routes (Home, Tests, Bookmarks, Profile) and card destinations (Practice Mode, Chapter Test, Exam Mode, Progress, Share App, Profile) with route params as needed (e.g., courseId).",
+    "Questions domain model: questions(id, course, chapter, difficulty{easy,med,hard}, question, optionA, optionB, optionC, optionD, answer, hint, explanation, created_at).",
+    "Questions API: GET /questions?course=&chapter=&limit=&offset= for paginated retrieval.",
+    "User answers API: POST /user/answer to record answers for progress tracking (answered/wrong).",
+    "Practice Mode should support local caching for offline access (cache questions per course/chapter; define invalidation/refresh strategy).",
+    "UI behavior: show Hint text in smaller typography; show Explanation only after the user reveals/answers (post-answer).",
+    "Chapter Test flow requirements: chapter selection → start test; defaults: 20 questions and 20-minute timer; randomize chapter-scoped questions with no repeats within the same test; support per-question 'mark for review'."
+  ],
+  "known_issues": [
+    "Deployment fails immediately with message containing \"no draft\" (user reports no additional logs)."
+  ],
+  "isFixRequest": true,
+  "imageRequirements": "## Required Images\n- Square neon-orange circuit 'SI' emblem on dark metallic/black background (swaraj-infotech-logo.dim_1024x1024.png)\n- Portrait logo poster with neon-orange circuit 'SI' emblem and 'SWARAJ INFOTECH' wordmark on dark metallic/black background (swaraj-infotech-logo-poster.dim_1080x1920.png)",
+  "existing_features": [
+    {
+      "id": "feature-create-a-cohesive-premium-android-style-visual-theme-for-the-app-named-swaraj-it-using-dark-black-background-bright-orange-gradient-accents-floating-glassmorphic-cards-rounded-corners-soft-shadows-clean-typography-and-smooth-animations-consistent-with-ultra-modern-fintech-apps-ensure-all-user-facing-text-is-in-english",
+      "title": "Create a cohesive premium Android-style visual theme for the app named “Swaraj IT” using: dark black background, bright orange gradient accents, floating glassmorphic cards, rounded corners, soft shadows, clean typography, and smooth animations consistent with ultra-modern fintech apps; ensure all user-facing text is in English.",
+      "reqIds": [
+        "REQ-1"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-a-splash-screen-for-swaraj-it-that-shows-the-app-logo-centered-and-includes-an-orange-gradient-animation-e-g-animated-ring-glow-or-animated-gradient-sweep-on-a-dark-black-background-matching-the-premium-fintech-aesthetic",
+      "title": "Implement a splash screen for “Swaraj IT” that shows the app logo centered and includes an orange gradient animation (e.g., animated ring/glow or animated gradient sweep) on a dark black background, matching the premium fintech aesthetic.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-the-required-generated-static-image-assets-logo-and-optional-background-texture-elements-into-the-frontend-as-static-files-and-use-them-in-the-splash-and-branding-elements-do-not-route-images-through-the-backend",
+      "title": "Add the required generated static image assets (logo and optional background/texture elements) into the frontend as static files and use them in the splash and branding elements; do not route images through the backend.",
+      "reqIds": [
+        "REQ-3"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-existing-swaraj-it-logo-asset-usage-across-the-entire-frontend-with-the-newly-uploaded-swaraj-infotech-logo-including-the-splash-screen-and-header",
+      "title": "Replace the existing Swaraj IT logo asset usage across the entire frontend with the newly uploaded Swaraj Infotech logo, including the splash screen and header.",
+      "reqIds": [
+        "REQ-4"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-all-user-facing-branding-text-from-swaraj-it-to-swaraj-infotech-across-the-frontend-including-page-title-splash-screen-header-hero-sections-and-ctas-while-keeping-all-text-in-english",
+      "title": "Update all user-facing branding text from “Swaraj IT” to “Swaraj Infotech” across the frontend (including page title, splash screen, header, hero, sections, and CTAs) while keeping all text in English.",
+      "reqIds": [
+        "REQ-5"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-enhance-and-optimize-the-ui-ux-to-look-more-ultra-modern-while-preserving-the-existing-dark-black-background-bright-orange-gradient-fintech-aesthetic-and-glassmorphic-styling-consistent-spacing-typography-scale-button-hierarchy-and-responsive-layout-polish",
+      "title": "Enhance and optimize the UI/UX to look more ultra-modern while preserving the existing dark black background + bright orange gradient fintech aesthetic and glassmorphic styling (consistent spacing, typography scale, button hierarchy, and responsive layout polish).",
+      "reqIds": [
+        "REQ-6"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-the-uploaded-swaraj-infotech-logo-as-a-static-generated-asset-in-the-frontend-and-reference-it-directly-from-the-ui-do-not-route-images-through-the-backend",
+      "title": "Add the uploaded Swaraj Infotech logo as a static generated asset in the frontend and reference it directly from the UI (do not route images through the backend).",
+      "reqIds": [
+        "REQ-7"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-phone-number-otp-authentication-ui-flow-consisting-of-these-screens-states-1-phone-input-country-code-phone-with-format-validation-2-request-otp-with-loader-error-ui-3-enter-otp-with-loader-error-ui-4-resend-otp-action-and-5-create-profile-screen-shown-only-for-new-users-name-select-course-mscit-or-gcc-tbc-optional-exam-date",
+      "title": "Add a phone-number OTP authentication UI flow consisting of these screens/states: (1) Phone input (country code + phone) with format validation, (2) Request OTP (with loader + error UI), (3) Enter OTP with loader + error UI, (4) Resend OTP action, and (5) Create Profile screen shown only for new users (Name, Select course: MSCIT or GCC-TBC, Optional exam date).",
+      "reqIds": [
+        "REQ-8"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-persist-authenticated-session-on-the-client-by-storing-the-issued-token-locally-and-using-it-to-restore-login-state-on-app-reload-implement-logout-to-clear-the-stored-token-and-return-to-the-login-screen",
+      "title": "Persist authenticated session on the client by storing the issued token locally and using it to restore login state on app reload; implement logout to clear the stored token and return to the login screen.",
+      "reqIds": [
+        "REQ-10"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-app-navigation-so-that-after-successful-login-the-user-is-routed-to-the-existing-home-experience-if-not-logged-in-the-authentication-flow-is-shown-instead-of-the-main-home-content",
+      "title": "Update the app navigation so that after successful login the user is routed to the existing Home experience; if not logged in, the authentication flow is shown instead of the main Home content.",
+      "reqIds": [
+        "REQ-12"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-login-screen-footer-that-displays-contact-9689915001-and-a-support-email-address-styled-consistently-with-the-existing-dark-orange-gradient-glassmorphic-theme-all-user-facing-text-must-be-in-english",
+      "title": "Add a login screen footer that displays: \"Contact: 9689915001\" and a support email address, styled consistently with the existing dark + orange gradient glassmorphic theme; all user-facing text must be in English.",
+      "reqIds": [
+        "REQ-13"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-new-authenticated-course-dashboard-screen-that-becomes-the-primary-post-login-home-experience-for-swaraj-infotech-styled-consistently-with-the-existing-dark-orange-gradient-glassmorphic-theme",
+      "title": "Create a new authenticated \"Course Dashboard\" screen that becomes the primary post-login Home experience for Swaraj Infotech, styled consistently with the existing dark + orange gradient glassmorphic theme.",
+      "reqIds": [
+        "REQ-14"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-course-dashboard-header-welcome-banner-showing-the-signed-in-user-s-name-and-a-daily-streak-indicator",
+      "title": "Implement the Course Dashboard header/welcome banner showing the signed-in user's name and a daily streak indicator.",
+      "reqIds": [
+        "REQ-15"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-grid-of-floating-glassmorphic-feature-cards-on-the-course-dashboard-for-practice-mode-chapter-test-exam-mode-progress-share-app-and-profile",
+      "title": "Add a grid of floating, glassmorphic feature cards on the Course Dashboard for: Practice Mode, Chapter Test, Exam Mode, Progress, Share App, and Profile.",
+      "reqIds": [
+        "REQ-16"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-the-quick-stats-section-to-the-course-dashboard-with-total-tests-accuracy-and-weak-chapters",
+      "title": "Add the Quick Stats section to the Course Dashboard with: Total tests, Accuracy %, and Weak Chapters.",
+      "reqIds": [
+        "REQ-17"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-bottom-navigation-bar-with-icons-and-labels-for-home-tests-bookmarks-profile-highlight-the-active-tab-and-support-navigation-between-tabs",
+      "title": "Add a bottom navigation bar with icons and labels for: Home, Tests, Bookmarks, Profile; highlight the active tab and support navigation between tabs.",
+      "reqIds": [
+        "REQ-18"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-subtle-ui-animations-for-the-course-dashboard-card-hover-tap-micro-interactions-and-a-progress-bar-micro-animation-where-applicable",
+      "title": "Add subtle UI animations for the Course Dashboard: card hover/tap micro-interactions and a progress bar micro-animation where applicable.",
+      "reqIds": [
+        "REQ-19"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-define-and-implement-a-navigation-map-for-the-new-dashboard-experience-including-routes-and-parameters-for-the-dashboard-and-its-destination-screens-and-include-the-navigation-map-as-a-developer-facing-artifact-in-the-repo",
+      "title": "Define and implement a navigation map for the new dashboard experience, including routes and parameters for the dashboard and its destination screens, and include the navigation map as a developer-facing artifact in the repo.",
+      "reqIds": [
+        "REQ-20"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-provide-screen-mockups-for-the-new-course-dashboard-and-its-key-destination-screens-as-part-of-the-project-deliverables-using-repo-stored-developer-facing-documentation-text-and-or-static-images-without-altering-the-backend",
+      "title": "Provide screen mockups for the new Course Dashboard and its key destination screens as part of the project deliverables, using repo-stored developer-facing documentation (text and/or static images) without altering the backend.",
+      "reqIds": [
+        "REQ-21"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-placeholder-frontend-src-screens-practicemodescreen-tsx-intro-only-ui-with-a-full-practice-mode-flow-1-chapter-selection-2-question-list-for-the-selected-chapter-3-question-view-navigation-must-follow-select-chapter-list-of-questions-open-question-view",
+      "title": "Replace the current placeholder `frontend/src/screens/PracticeModeScreen.tsx` intro-only UI with a full Practice Mode flow: (1) chapter selection, (2) question list for the selected chapter, (3) question view. Navigation must follow: “Select chapter → list of questions → open question view”.",
+      "reqIds": [
+        "REQ-25"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-question-view-ui-to-display-question-text-and-options-a-d-with-a-hint-button-a-show-answer-toggle-and-an-explanation-panel-ensure-hints-render-in-smaller-text-than-the-question-options-and-ensure-the-explanation-only-becomes-visible-after-the-answer-is-shown",
+      "title": "Implement the question view UI to display question text and options A–D, with: a “Hint” button, a “Show Answer” toggle, and an “Explanation” panel. Ensure hints render in smaller text than the question/options, and ensure the explanation only becomes visible after the answer is shown.",
+      "reqIds": [
+        "REQ-26"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-practice-mode-navigation-controls-for-next-previous-between-questions-within-the-selected-chapter-including-disabled-states-at-the-first-last-question-and-a-visible-progress-indicator-e-g-question-x-of-y",
+      "title": "Add Practice Mode navigation controls for Next/Previous between questions within the selected chapter, including disabled states at the first/last question and a visible progress indicator (e.g., “Question X of Y”).",
+      "reqIds": [
+        "REQ-27"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-bookmarking-for-questions-in-practice-mode-and-integrate-it-with-the-existing-bookmarks-section-allow-toggling-bookmark-state-from-the-question-view-persist-it-per-user-and-update-frontend-src-screens-bookmarksscreen-tsx-to-show-real-bookmarked-questions-replacing-placeholder-data",
+      "title": "Implement bookmarking for questions in Practice Mode and integrate it with the existing Bookmarks section: allow toggling bookmark state from the question view, persist it per user, and update `frontend/src/screens/BookmarksScreen.tsx` to show real bookmarked questions (replacing placeholder data).",
+      "reqIds": [
+        "REQ-28"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-chapter-level-progress-indicators-in-the-practice-mode-chapter-selection-ui-showing-answered-bookmarked-and-wrong-counts-per-chapter-based-on-the-signed-in-user-s-stored-activity",
+      "title": "Implement chapter-level progress indicators in the Practice Mode chapter selection UI showing answered, bookmarked, and wrong counts per chapter, based on the signed-in user’s stored activity.",
+      "reqIds": [
+        "REQ-29"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-frontend-data-fetching-hooks-react-query-for-fetching-questions-with-course-chapter-limit-offset-equivalent-to-get-questions-submitting-answers-equivalent-to-post-user-answer-fetching-bookmarks-and-fetching-per-chapter-progress-use-these-hooks-throughout-the-practice-mode-flow",
+      "title": "Add frontend data-fetching hooks (React Query) for: fetching questions with `course`, `chapter`, `limit`, `offset` (equivalent to `GET /questions?...`), submitting answers (equivalent to `POST /user/answer`), fetching bookmarks, and fetching per-chapter progress; use these hooks throughout the Practice Mode flow.",
+      "reqIds": [
+        "REQ-30"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-local-caching-to-support-offline-practice-mode-cache-question-lists-details-per-course-chapter-on-the-client-and-allow-users-to-continue-practicing-from-cached-data-when-the-backend-is-unavailable-queue-answer-submissions-and-bookmark-changes-locally-and-sync-them-to-the-backend-when-connectivity-is-restored",
+      "title": "Implement local caching to support offline Practice Mode: cache question lists/details per (course, chapter) on the client and allow users to continue practicing from cached data when the backend is unavailable; queue answer submissions and bookmark changes locally and sync them to the backend when connectivity is restored.",
+      "reqIds": [
+        "REQ-31"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-developer-facing-routing-documentation-in-frontend-docs-navigation-map-md-to-include-any-practice-mode-parameters-used-for-chapter-question-navigation-e-g-hash-query-params-for-course-chapter-and-selected-question-while-keeping-the-existing-hash-based-routing-approach-in-frontend-src-hooks-usehashroute-ts-do-not-edit-immutable-hook-files",
+      "title": "Update developer-facing routing documentation in `frontend/docs/navigation-map.md` to include any Practice Mode parameters used for chapter/question navigation (e.g., hash query params for `course`, `chapter`, and selected question) while keeping the existing hash-based routing approach in `frontend/src/hooks/useHashRoute.ts` (do not edit immutable hook files).",
+      "reqIds": [
+        "REQ-32"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-replace-the-current-placeholder-frontend-src-screens-chaptertestscreen-tsx-start-only-ui-with-a-full-chapter-test-flow-1-chapter-selection-2-configurable-test-setup-question-count-default-20-timer-default-20-minutes-3-in-test-experience-with-timer-and-randomized-question-set-4-submit-5-results-screen-with-itemized-review-correct-incorrect-explanation-all-user-facing-text-must-be-in-english",
+      "title": "Replace the current placeholder `frontend/src/screens/ChapterTestScreen.tsx` start-only UI with a full Chapter Test flow: (1) chapter selection → (2) configurable test setup (question count default 20; timer default 20 minutes) → (3) in-test experience with timer and randomized question set → (4) submit → (5) results screen with itemized review (correct/incorrect + explanation). All user-facing text must be in English.",
+      "reqIds": [
+        "REQ-37"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-frontend-react-query-hooks-for-chapter-test-to-call-the-backend-actor-methods-equivalent-to-post-test-start-post-test-submit-and-get-test-history-and-use-them-in-the-chapter-test-flow-and-tests-history-screen",
+      "title": "Add frontend React Query hooks for Chapter Test to call the backend actor methods equivalent to `POST /test/start`, `POST /test/submit`, and `GET /test/history`, and use them in the Chapter Test flow and Tests history screen.",
+      "reqIds": [
+        "REQ-38"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-frontend-src-screens-testsscreen-tsx-to-replace-placeholder-test-data-with-the-authenticated-user-s-real-chapter-test-history-from-the-backend-allow-selecting-an-entry-to-view-its-details-score-percentage-accuracy-time-taken-and-itemized-review-with-explanation",
+      "title": "Update `frontend/src/screens/TestsScreen.tsx` to replace placeholder test data with the authenticated user’s real Chapter Test history from the backend; allow selecting an entry to view its details (score, percentage/accuracy, time taken, and itemized review with explanation).",
+      "reqIds": [
+        "REQ-39"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-developer-facing-routing-documentation-in-frontend-docs-navigation-map-md-to-document-any-hash-query-parameters-introduced-for-the-chapter-test-flow-e-g-chapter-testid-question-index-while-keeping-the-existing-hash-based-routing-approach-and-without-editing-immutable-hook-files",
+      "title": "Update developer-facing routing documentation in `frontend/docs/navigation-map.md` to document any hash query parameters introduced for the Chapter Test flow (e.g., chapter, testId, question index), while keeping the existing hash-based routing approach and without editing immutable hook files.",
+      "reqIds": [
+        "REQ-40"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-the-full-exam-mode-ui-flow-in-the-frontend-replacing-the-current-intro-only-frontend-src-screens-exammodescreen-tsx-start-exam-for-the-signed-in-user-s-course-mscit-gcc-tbc-run-the-timed-exam-with-strict-ui-controls-submit-manual-or-auto-then-show-a-results-screen-with-score-time-used-accuracy-and-weak-chapters",
+      "title": "Implement the full Exam Mode UI flow in the frontend (replacing the current intro-only `frontend/src/screens/ExamModeScreen.tsx`): start exam for the signed-in user’s course (MSCIT/GCC-TBC), run the timed exam with strict UI controls, submit (manual or auto), then show a results screen with score, time used, accuracy %, and weak chapters.",
+      "reqIds": [
+        "REQ-44"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-frontend-data-hooks-react-query-for-exam-mode-to-call-the-new-backend-actor-methods-equivalent-to-post-exam-start-get-exam-question-id-post-exam-submit-plus-exam-attempt-history-and-attempt-detail-review-fetch-and-use-them-throughout-the-exam-mode-screens",
+      "title": "Add frontend data hooks (React Query) for Exam Mode to call the new backend actor methods equivalent to: `POST /exam/start`, `GET /exam/question/{id}`, `POST /exam/submit`, plus exam attempt history and attempt detail review fetch, and use them throughout the Exam Mode screens.",
+      "reqIds": [
+        "REQ-45"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-in-exam-question-state-management-in-the-frontend-store-selected-option-per-question-support-mark-for-review-per-question-allow-navigation-next-previous-without-losing-state-and-ensure-no-question-repeats-within-the-same-attempt-by-relying-on-the-backend-provided-ordered-question-set",
+      "title": "Implement in-exam question state management in the frontend: store selected option per question, support Mark for Review per question, allow navigation Next/Previous without losing state, and ensure no question repeats within the same attempt by relying on the backend-provided ordered question set.",
+      "reqIds": [
+        "REQ-46"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-exam-mode-attempt-history-and-review-ui-allow-users-to-view-a-list-of-past-exam-mode-attempts-and-open-any-attempt-to-review-all-questions-with-their-answers-correct-incorrect-status-and-explanations",
+      "title": "Add Exam Mode attempt history and review UI: allow users to view a list of past Exam Mode attempts and open any attempt to review all questions with their answers, correct/incorrect status, and explanations.",
+      "reqIds": [
+        "REQ-47"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-developer-facing-routing-documentation-in-frontend-docs-navigation-map-md-to-document-any-hash-query-parameters-introduced-for-exam-mode-e-g-attemptid-question-index-and-review-mode-while-keeping-the-existing-hash-based-routing-approach-do-not-edit-immutable-routing-hook-files",
+      "title": "Update developer-facing routing documentation in `frontend/docs/navigation-map.md` to document any hash query parameters introduced for Exam Mode (e.g., attemptId, question index, and review mode), while keeping the existing hash-based routing approach (do not edit immutable routing hook files).",
+      "reqIds": [
+        "REQ-48"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-a-separate-standalone-admin-panel-web-dashboard-separate-url-standalone-react-app-within-the-repo-independent-from-the-existing-learner-app-ui-and-ensure-all-user-facing-text-in-the-admin-panel-is-in-english",
+      "title": "Create a separate standalone Admin Panel web dashboard (separate URL / standalone React app) within the repo, independent from the existing learner app UI, and ensure all user-facing text in the Admin Panel is in English.",
+      "reqIds": [
+        "REQ-49"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-secure-admin-panel-authentication-using-email-password-with-optional-2fa-and-enforce-role-based-access-control-with-at-least-two-roles-admin-and-moderator",
+      "title": "Implement secure Admin Panel authentication using email/password with optional 2FA, and enforce role-based access control with at least two roles: admin and moderator.",
+      "reqIds": [
+        "REQ-50"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-backend-admin-apis-for-full-questions-management-create-update-delete-and-search-list-questions-with-filtering-by-course-chapter-and-difficulty-ensure-the-add-question-form-fields-align-with-the-existing-question-data-model-stored-in-the-backend",
+      "title": "Add backend admin APIs for full Questions management: create, update, delete, and search/list questions with filtering by course, chapter, and difficulty; ensure the Add Question form fields align with the existing Question data model stored in the backend.",
+      "reqIds": [
+        "REQ-51"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-bulk-upload-of-questions-via-csv-in-the-admin-panel-including-csv-file-upload-client-side-preview-row-level-validation-before-import-and-an-import-action-that-writes-valid-rows-to-the-backend-also-add-a-sample-csv-template-file-to-the-repo",
+      "title": "Implement bulk upload of questions via CSV in the Admin Panel, including: CSV file upload, client-side preview, row-level validation before import, and an import action that writes valid rows to the backend; also add a sample CSV template file to the repo.",
+      "reqIds": [
+        "REQ-52"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-chapters-categories-management-in-the-backend-and-admin-panel-ui-supporting-crud-operations-and-listing-to-enable-organizing-course-content",
+      "title": "Add Chapters & Categories management in the backend and Admin Panel UI, supporting CRUD operations and listing, to enable organizing course content.",
+      "reqIds": [
+        "REQ-53"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-users-results-administration-provide-admin-apis-and-admin-panel-ui-to-view-a-users-list-view-per-user-test-exam-history-and-export-user-results-history-to-csv",
+      "title": "Implement Users & Results administration: provide admin APIs and Admin Panel UI to view a users list, view per-user test/exam history, and export user results/history to CSV.",
+      "reqIds": [
+        "REQ-54"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-in-app-notifications-not-real-push-with-an-admin-panel-composer-that-lets-admins-create-notifications-with-title-message-and-a-target-segment-add-backend-apis-to-create-list-notifications-and-to-support-delivery-to-users-inside-the-learner-app-storage-retrieval",
+      "title": "Implement in-app notifications (not real push) with an Admin Panel composer that lets admins create notifications with title, message, and a target segment; add backend APIs to create/list notifications and to support delivery to users inside the learner app (storage + retrieval).",
+      "reqIds": [
+        "REQ-55"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-backup-restore-as-json-export-import-of-backend-data-questions-chapters-categories-users-profiles-results-histories-notifications-and-admin-rbac-state-as-appropriate-with-admin-panel-ui-to-download-a-backup-and-upload-a-restore-file-provide-backend-apis-for-both-operations",
+      "title": "Implement Backup / Restore as JSON export/import of backend data (questions, chapters/categories, users/profiles, results/histories, notifications, and admin/RBAC state as appropriate) with Admin Panel UI to download a backup and upload a restore file; provide backend APIs for both operations.",
+      "reqIds": [
+        "REQ-56"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-provide-developer-facing-documentation-of-all-admin-panel-api-endpoints-actor-methods-and-payloads-including-authentication-rbac-questions-crud-csv-import-chapters-categories-crud-users-results-access-csv-export-notifications-and-backup-restore",
+      "title": "Provide developer-facing documentation of all Admin Panel API endpoints (actor methods) and payloads, including authentication, RBAC, questions CRUD, CSV import, chapters/categories CRUD, users/results access & CSV export, notifications, and backup/restore.",
+      "reqIds": [
+        "REQ-57"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-developer-facing-documentation-that-provides-production-ready-postgresql-ddl-for-the-domain-tables-and-aligns-with-the-existing-app-admin-features-users-questions-tests-test-questions-bookmarks-and-notifications",
+      "title": "Add developer-facing documentation that provides production-ready PostgreSQL DDL for the domain tables and aligns with the existing app/admin features: users, questions, tests, test_questions, bookmarks, and notifications.",
+      "reqIds": [
+        "REQ-58"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-developer-facing-api-documentation-to-include-the-new-implemented-learner-test-endpoints-test-start-submit-history-the-logging-rate-limit-behavior-and-how-the-motoko-schema-maps-to-the-documented-postgresql-schema",
+      "title": "Update developer-facing API documentation to include the new/implemented learner test endpoints (test start/submit/history), the logging/rate-limit behavior, and how the Motoko schema maps to the documented PostgreSQL schema.",
+      "reqIds": [
+        "REQ-65"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-generate-google-play-store-visual-assets-in-the-swaraj-infotech-dark-orange-theme-and-add-them-to-the-repo-as-static-files-under-frontend-public-assets-generated",
+      "title": "Generate Google Play Store visual assets in the Swaraj Infotech dark + orange theme and add them to the repo as static files under `frontend/public/assets/generated`.",
+      "reqIds": [
+        "REQ-66"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-create-play-store-listing-copy-in-both-english-and-marathi-and-store-it-in-a-developer-facing-document-in-the-repo",
+      "title": "Create Play Store listing copy in both English and Marathi and store it in a developer-facing document in the repo.",
+      "reqIds": [
+        "REQ-67"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-public-privacy-policy-html-page-and-a-public-terms-conditions-html-page-to-the-frontend-static-site-and-document-the-urls-hosting-approach-e-g-github-pages-so-they-can-be-used-as-the-play-store-privacy-policy-url-and-terms-url",
+      "title": "Add a public Privacy Policy HTML page and a public Terms & Conditions HTML page to the frontend static site, and document the URLs/hosting approach (e.g., GitHub Pages) so they can be used as the Play Store Privacy Policy URL and Terms URL.",
+      "reqIds": [
+        "REQ-68"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-authentication-footer-support-email-to-match-the-play-store-legal-contact-email-swarajinfotech2023-gmail-com-while-keeping-all-user-facing-text-in-english",
+      "title": "Update the authentication footer support email to match the Play Store/legal contact email `swarajinfotech2023@gmail.com` while keeping all user-facing text in English.",
+      "reqIds": [
+        "REQ-69"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-an-in-app-privacy-friendly-analytics-opt-in-toggle-and-a-crash-log-export-flow-the-user-must-be-able-to-export-locally-collected-crash-logs-as-a-json-file-from-the-ui",
+      "title": "Implement an in-app privacy-friendly analytics opt-in toggle and a crash log export flow. The user must be able to export locally collected crash logs as a JSON file from the UI.",
+      "reqIds": [
+        "REQ-70"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-developer-facing-release-documentation-describing-versioning-and-release-notes-for-play-store-submissions-and-clarify-the-limitation-around-generating-a-signed-aab-from-this-repo",
+      "title": "Add developer-facing release documentation describing versioning and release notes for Play Store submissions, and clarify the limitation around generating a signed AAB from this repo.",
+      "reqIds": [
+        "REQ-71"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-diagnose-and-fix-the-deployment-failure-that-stops-immediately-and-reports-a-message-containing-no-draft-and-ensure-the-app-can-be-redeployed-successfully",
+      "title": "Diagnose and fix the deployment failure that stops immediately and reports a message containing “no draft”, and ensure the app can be redeployed successfully.",
+      "reqIds": [
+        "REQ-72"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-share-app-experience-to-support-whatsapp-sharing-with-prefilled-english-text-and-a-play-store-link-while-keeping-the-existing-web-share-api-and-clipboard-fallback-behavior",
+      "title": "Update the Share App experience to support WhatsApp sharing with prefilled English text and a Play Store link, while keeping the existing Web Share API and clipboard fallback behavior.",
+      "reqIds": [
+        "REQ-73"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-optional-per-user-referral-code-generation-and-sharing-including-a-ui-to-view-copy-share-the-user-s-referral-code-and-a-backend-api-to-fetch-or-generate-the-code-for-the-authenticated-user",
+      "title": "Implement optional per-user referral code generation and sharing, including a UI to view/copy/share the user’s referral code and a backend API to fetch (or generate) the code for the authenticated user.",
+      "reqIds": [
+        "REQ-74"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-push-style-reminders-for-daily-quiz-reminders-and-new-content-using-web-compatible-mechanisms-a-in-app-reminders-banner-card-and-b-optional-browser-notifications-via-the-web-notifications-api-permission-based",
+      "title": "Add “push-style” reminders for daily quiz reminders and new content using web-compatible mechanisms: (a) in-app reminders (banner/card) and (b) optional browser notifications via the Web Notifications API (permission-based).",
+      "reqIds": [
+        "REQ-75"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-implement-privacy-friendly-analytics-event-collection-for-key-product-metrics-downloads-installs-proxy-active-users-retention-and-add-an-admin-panel-analytics-dashboard-to-visualize-these-metrics-over-selectable-time-ranges",
+      "title": "Implement privacy-friendly analytics event collection for key product metrics (downloads/installs proxy, active users, retention) and add an Admin Panel analytics dashboard to visualize these metrics over selectable time ranges.",
+      "reqIds": [
+        "REQ-76"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-an-in-app-feedback-form-in-the-learner-app-that-submits-feedback-to-the-backend-for-admin-review-do-not-attempt-to-send-email-from-the-canister",
+      "title": "Add an in-app feedback form in the learner app that submits feedback to the backend for admin review; do not attempt to send email from the canister.",
+      "reqIds": [
+        "REQ-77"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-the-two-newly-uploaded-logo-images-1770580116347-png-and-1770580116347-1-png-into-the-frontend-as-static-assets-under-frontend-public-assets-generated-then-update-the-learner-app-to-use-the-new-logo-asset-everywhere-the-current-logo-is-used-including-the-splash-screen-and-header-ensure-all-updated-img-alt-text-and-any-related-user-facing-text-remains-in-english",
+      "title": "Add the two newly uploaded logo images (1770580116347.png and 1770580116347-1.png) into the frontend as static assets under `frontend/public/assets/generated/`, then update the learner app to use the new logo asset everywhere the current logo is used (including the splash screen and header). Ensure all updated `img alt` text and any related user-facing text remains in English.",
+      "reqIds": [
+        "REQ-78"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-remove-all-caffeine-ai-branding-from-the-entire-frontend-learner-app-and-admin-panel-including-any-visible-labels-footer-text-watermarks-or-links-that-mention-caffeine-or-caffeine-ai-while-keeping-all-other-app-branding-as-swaraj-infotech-and-ensuring-all-user-facing-text-remains-in-english",
+      "title": "Remove all \"Caffeine AI\" branding from the entire frontend (learner app and Admin Panel), including any visible labels, footer text, watermarks, or links that mention Caffeine or Caffeine AI, while keeping all other app branding as Swaraj Infotech and ensuring all user-facing text remains in English.",
+      "reqIds": [
+        "REQ-79"
+      ],
+      "version": 1
+    }
+  ],
+  "new_feature_requests": [
+    {
+      "id": "AR-1",
+      "summary": "Create modern premium Android UI for 'Swaraj IT' (dark black theme, orange gradients, floating glassmorphic cards, rounded corners, soft shadows, clean typography, smooth animations; fintech-style aimed at students)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-2",
+      "summary": "Design splash screen for 'Swaraj IT' with centered logo and animated orange gradient accent",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Replace the existing app logo everywhere (including splash screen) with the new Swaraj Infotech logo",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Update all in-app branding text/name from “Swaraj IT” to “Swaraj Infotech” across all screens",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-5",
+      "summary": "Enhance and optimize overall UI/UX to be ultra-modern while keeping the dark theme + orange gradient fintech aesthetic (per provided UI/UX reference)",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-6",
+      "summary": "Add OTP-based phone authentication flow: phone input (country code + phone) with validation, request OTP (SMS stub API allowed), enter OTP + resend, auto-login on success with local token persistence, new-user-only profile creation (name, course MSCIT/GCC-TBC, optional exam date), store profile in backend (user_id, name, phone, course, created_at), show loaders/errors, and display footer contact '9689915001' + support email on login screen",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-8",
+      "summary": "Implement backend OTP endpoints using a stubbed SMS send behavior that always succeeds, plus OTP verification that returns an auth token and indicates whether the user is new or existing.",
+      "reqIds": [
+        "REQ-9"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-10",
+      "summary": "Store and retrieve user profiles in the backend with fields: user_id, name, phone, course, created_at; create a profile only if the authenticated user is new (no existing profile).",
+      "reqIds": [
+        "REQ-11"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-11",
+      "summary": "Create an animated course dashboard screen: welcome banner (username + daily streak), grid of floating cards (Practice Mode, Chapter Test, Exam Mode, Progress, Share App, Profile), quick stats (Total tests, Accuracy %, Weak Chapters), bottom nav (Home/Tests/Bookmarks/Profile) with subtle micro-animations; deliver screen mockups and a navigation map (routes + params).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-12",
+      "summary": "Implement question engine with questions DB model (id, course, chapter, difficulty easy/med/hard, question, optionA-D, answer, hint, explanation, created_at) and API to fetch questions (GET /questions with course/chapter/limit/offset).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-13",
+      "summary": "Implement Practice Mode UI/UX: select chapter → list questions → question view with options, Hint button (smaller text), Show Answer toggle, Explanation panel shown after answer; bookmark question; next/previous navigation; chapter progress indicator (answered/bookmarked/wrong).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-14",
+      "summary": "Add local caching to support offline Practice Mode (cache question lists/details per course/chapter and sync answers/bookmarks when online as applicable).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-15",
+      "summary": "Implement answer submission endpoint integration (POST /user/answer) to record user answers and enable progress tracking (answered/wrong) for Practice Mode.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-16",
+      "summary": "Extend the Motoko backend (single-actor in `backend/main.mo`) to add a Questions data model matching: `questions(id, course, chapter, difficulty{easy,med,hard}, question, optionA, optionB, optionC, optionD, answer, hint, explanation, created_at)` and provide a read API equivalent to: `GET /questions?course=&chapter=&limit=&offset=` (filter by course and chapter; support pagination via limit/offset).",
+      "reqIds": [
+        "REQ-22"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-17",
+      "summary": "Implement backend persistence APIs to record per-user practice activity, including answer submissions and bookmarking, and provide the write API equivalent to: `POST /user/answer` to store the caller’s answer (question id + selected option + correctness + timestamp) for progress tracking (answered/wrong).",
+      "reqIds": [
+        "REQ-23"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-18",
+      "summary": "Add backend APIs to support Practice Mode progress indicators per chapter for the signed-in user, including counts for: answered, bookmarked, wrong, scoped to (course, chapter).",
+      "reqIds": [
+        "REQ-24"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-19",
+      "summary": "Add a full Chapter Test flow: select chapter → start test; configurable question count (default 20) and timer (default 20 min); randomize questions from the selected chapter with no repeats within the test; per-question mark-for-review toggle; submit test to compute score/accuracy/time taken; show results screen with score/percentage and itemized review (correct/incorrect + explanation); save results to user history; integrate APIs POST /test/start, POST /test/submit, GET /test/history.",
+      "reqIds": [],
+      "status": "in_progress"
+    },
+    {
+      "id": "AR-20",
+      "summary": "Implement backend Chapter Test APIs equivalent to: `POST /test/start`, `POST /test/submit`, and `GET /test/history`, with per-user authorization consistent with existing authenticated methods (trap when unauthenticated).",
+      "reqIds": [
+        "REQ-33"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-21",
+      "summary": "On `POST /test/start`: allow the user to start a chapter test by providing (a) chapter identifier and (b) configurable question count (default 20) and timer duration (default 20 minutes); randomly select questions only from the selected chapter with no repeats within the same test; return a test session payload including the selected questions and enough metadata for the frontend to run the test.",
+      "reqIds": [
+        "REQ-34"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-22",
+      "summary": "On `POST /test/submit`: accept the user's answers for a started test (including per-question mark-for-review state), compute score, percentage/accuracy, and time taken; return a result payload that includes an itemized review per question (correct/incorrect) and each question’s explanation.",
+      "reqIds": [
+        "REQ-35"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-23",
+      "summary": "Persist Chapter Test results to per-user history on the backend and implement `GET /test/history` to return the authenticated caller’s saved test results ordered from most recent to oldest.",
+      "reqIds": [
+        "REQ-36"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-24",
+      "summary": "Implement Exam Mode (strict real-exam simulation): MSCIT = 15 MCQs/15 minutes; GCC-TBC = 25 MCQs/25 minutes; random questions from all chapters of the selected course; no repeats within the same attempt; Next/Prev navigation; Mark-for-Review; auto-submit when timer ends; after submit show score, time used, accuracy %, weak chapters; save attempt history and allow full review with answers/explanations.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-25",
+      "summary": "Implement backend Exam Mode APIs: POST /exam/start {course} to create an attempt with a randomized non-repeating question set from all chapters; GET /exam/question/{id} to fetch question details for the attempt; POST /exam/submit to score/compute accuracy & time used, return itemized review with explanations, and persist to per-user exam attempt history for later review.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-26",
+      "summary": "Implement Exam Mode UI layout: top circular countdown timer + numeric time; bottom controls include question index (e.g., 1/15 or 1/25), Prev/Next, MarkForReview toggle, and Submit; enforce auto-submit at time expiry.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-27",
+      "summary": "Implement backend Exam Mode APIs in `backend/main.mo` (single-actor) equivalent to: `POST /exam/start {course}`, `GET /exam/question/{id}`, and `POST /exam/submit`, secured the same way as existing authenticated methods (trap when unauthenticated).",
+      "reqIds": [
+        "REQ-41"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-28",
+      "summary": "Enforce strict Exam Mode rules in backend attempt generation and scoring: MSCIT must be exactly 15 questions with a 15-minute timer; GCC-TBC must be exactly 25 questions with a 25-minute timer; questions must be randomized from all chapters within the selected course; no question repeats within a single attempt; allow new attempts but do not allow re-submitting or re-attempting the same saved attempt.",
+      "reqIds": [
+        "REQ-42"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-29",
+      "summary": "Add backend support to return per-user Exam Mode attempt history and full review details (including answers and explanations) so users can open and review past attempts after submission.",
+      "reqIds": [
+        "REQ-43"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-30",
+      "summary": "Build a separate standalone Admin Panel (web dashboard) with secure login (email/password + optional 2FA) and role-based access (admin, moderator).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-31",
+      "summary": "Admin Panel: Questions management UI (add question form aligned to DB fields; edit/delete; search and filter by course/chapter/difficulty).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-32",
+      "summary": "Admin Panel: Bulk upload questions via CSV with preview and row validation before import; provide a sample CSV template.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-33",
+      "summary": "Admin Panel: Manage chapters & categories (CRUD) for course content organization.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-34",
+      "summary": "Admin Panel: View users list; view test history; export user results/history to CSV.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-35",
+      "summary": "Admin Panel: In-app notifications composer (title, message, target segment) with supporting backend APIs.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-36",
+      "summary": "Admin Panel: Backup/restore via JSON export/import of backend DB data (questions, chapters/categories, users, results, etc.) with supporting APIs.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-37",
+      "summary": "Define and implement backend API endpoints for all Admin Panel operations (auth/RBAC, questions, bulk import, chapters/categories, users/results exports, notifications, backup/restore).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-38",
+      "summary": "Provide production-ready PostgreSQL DDL (documentation) for core tables: users, questions, tests, test_questions, bookmarks, notifications aligned to the app’s domain model and APIs.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-39",
+      "summary": "Mirror/emulate the PostgreSQL-style schema inside the Motoko canister: implement table-like data structures and CRUD/query behaviors to match the documented tables and endpoints.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-40",
+      "summary": "Implement 'no repeat' enforcement by persisting a test_questions row as soon as a question is served and selecting subsequent questions excluding already-served question_ids for the current test/attempt.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-41",
+      "summary": "Add canister-internal rate limiting and request logging (Postgres-style middleware concepts) for key endpoints (auth, questions, tests, admin).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-43",
+      "summary": "Mirror/emulate the PostgreSQL-style schema inside the Motoko canister by extending backend data models and storage so the canister can represent the logical equivalents of: tests, test_questions, bookmarks (with created_at), and notifications (with sent_at/body), in addition to the already-present users/profiles and questions.",
+      "reqIds": [
+        "REQ-59"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-44",
+      "summary": "Implement backend Chapter Test APIs equivalent to: POST /test/start, POST /test/submit, and GET /test/history, with per-user authorization consistent with existing authenticated methods (trap when unauthenticated).",
+      "reqIds": [
+        "REQ-60"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-45",
+      "summary": "Enforce the requested “no repeat” constraint for tests/attempts by persisting a test_questions-style row as soon as a question is served, and ensure subsequent selection excludes already-served questionIds for the current test.",
+      "reqIds": [
+        "REQ-61"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-46",
+      "summary": "Add canister-internal rate limiting for key operations (auth OTP request/verify, questions fetch, answer submit, test start/submit/history, and admin operations) using Motoko state, and return/trap with English error messages when limits are exceeded.",
+      "reqIds": [
+        "REQ-62"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-47",
+      "summary": "Add canister-internal request logging (“Postgres-style middleware concepts”) for the same key operations, capturing timestamp, caller (or phone for OTP), operation name, and success/failure, and provide an admin-only method to query recent logs for debugging.",
+      "reqIds": [
+        "REQ-63"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-48",
+      "summary": "Fix OTP verification behavior so the verify response correctly indicates whether the caller is a new user or an existing user, based on whether a profile already exists or whether the phone number is already associated with an existing user.",
+      "reqIds": [
+        "REQ-64"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-49",
+      "summary": "Prepare Play Store release build flow: generate signed Android App Bundle (AAB) with proper release signing and Play App Signing alignment.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-50",
+      "summary": "Generate Play Store visual assets: app icon (512x512 PNG), feature graphic (1024x500), and 5 in-app themed screenshots (dark + orange).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-51",
+      "summary": "Produce Play Store listing copy in both Marathi + English: short description and long description.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-52",
+      "summary": "Create and host a public Privacy Policy URL (simple HTML or GitHub Pages) stating: phone OTP use, data stored (phone, name, test history), third-party services (SMS provider), and support contact swarajinfotech2023@gmail.com.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-53",
+      "summary": "Create and host a basic public Terms & Conditions page (simple HTML).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-54",
+      "summary": "Add versioning + release notes process for Play Store releases (versionName/versionCode strategy and changelog/release notes).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-55",
+      "summary": "Include a script/flow to export crash logs and add an analytics opt-in mechanism (user toggle) for Play Store readiness.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-56",
+      "summary": "Implement Share App utility: WhatsApp share with prefilled text and a Play Store link (from in-app Share App entry point).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-57",
+      "summary": "Add optional referral code generation and sharing flow (user-specific referral code; track referrals as applicable).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-58",
+      "summary": "Implement real push notifications for daily quiz reminders and new content announcements (beyond in-app notifications).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-59",
+      "summary": "Add analytics dashboards for downloads, active users, and retention (likely Admin Panel reporting).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-60",
+      "summary": "Add an in-app feedback form that sends user feedback to an admin/support email address.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-61",
+      "summary": "Remove all Caffeine AI branding from the app UI (headers/footers/watermarks/text) while keeping Swaraj Infotech branding.",
+      "reqIds": [],
+      "status": "pending"
+    }
+  ],
+  "gameProjectType": "none",
+  "projectName": "Swaraj Infotech",
+  "clarification_mode": "instant",
+  "clarification_rounds": 0
+}
