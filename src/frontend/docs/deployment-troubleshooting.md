@@ -1,17 +1,16 @@
-# Deployment Troubleshooting Guide
+# Deployment Troubleshooting
 
-## "No Draft" Deployment Error
+## "No Draft" Error
 
-### Observed Issue
-Deployment fails immediately with error message: "🙏 Deployment unsuccessful - Deployment error" with mention of "no draft".
+### Symptoms
+Deployment stops with error message indicating no draft is available.
 
-### Suspected Causes
-1. **Build artifacts not generated**: The deployment system expects compiled frontend and backend artifacts before deployment
-2. **Incomplete build process**: Previous build may have been interrupted or failed silently
-3. **Cache/state mismatch**: Deployment state may be out of sync with actual codebase
+### Common Causes
+1. Build artifacts not generated
+2. Frontend build failed silently
+3. Canister state mismatch
+4. Cache issues
 
 ### Resolution Steps
 
-#### Clean Redeploy Process
-Run these commands in order to perform a clean deployment:
-
+#### Quick Fix (Clean Redeploy)

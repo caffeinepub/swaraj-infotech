@@ -1,78 +1,21 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-08T21:30:33.742Z",
+  "generatedAt": "2026-02-09T05:21:26.611Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 2,
-    "implemented": 2,
-    "items": [
-      {
-        "id": "REQ-78",
-        "summary": "Add the two newly uploaded logo images (1770580116347.png and 1770580116347-1.png) into the frontend as static assets under `frontend/public/assets/generated/`, then update the learner app to use the new logo asset everywhere the current logo is used (including the splash screen and header). Ensure all updated `img alt` text and any related user-facing text remains in English.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/public/assets/generated/1770580116347.png",
-          "frontend/public/assets/generated/1770580116347-1.png",
-          "frontend/public/assets/generated/swaraj-infotech-logo.dim_1024x1024.png",
-          "frontend/public/assets/generated/swaraj-infotech-logo-poster.dim_1080x1920.png",
-          "frontend/src/config/brand.ts",
-          "frontend/src/components/BrandHeader.tsx",
-          "frontend/src/components/SplashScreen.tsx",
-          "frontend/src/components/auth/OtpAuthFlow.tsx"
-        ],
-        "matchedFiles": [
-          "frontend/public/assets/generated/swaraj-infotech-logo.dim_1024x1024.png",
-          "frontend/public/assets/generated/swaraj-infotech-logo-poster.dim_1080x1920.png",
-          "frontend/src/config/brand.ts",
-          "frontend/src/components/BrandHeader.tsx",
-          "frontend/src/components/SplashScreen.tsx",
-          "frontend/src/components/auth/OtpAuthFlow.tsx"
-        ]
-      },
-      {
-        "id": "REQ-79",
-        "summary": "Remove all \"Caffeine AI\" branding from the entire frontend (learner app and Admin Panel), including any visible labels, footer text, watermarks, or links that mention Caffeine or Caffeine AI, while keeping all other app branding as Swaraj Infotech and ensuring all user-facing text remains in English.",
-        "status": "implemented",
-        "plannedFiles": [
-          "frontend/src/config/brand.ts",
-          "frontend/src/App.tsx",
-          "frontend/src/components/auth/AuthFooter.tsx",
-          "frontend/src/admin/components/AdminShell.tsx",
-          "frontend/src/admin/auth/AdminLoginScreen.tsx",
-          "frontend/index.html",
-          "frontend/admin.html"
-        ],
-        "matchedFiles": [
-          "frontend/src/config/brand.ts",
-          "frontend/src/components/auth/AuthFooter.tsx",
-          "frontend/src/admin/components/AdminShell.tsx",
-          "frontend/src/admin/auth/AdminLoginScreen.tsx",
-          "frontend/index.html",
-          "frontend/admin.html"
-        ]
-      }
-    ]
+    "total": 0,
+    "implemented": 0,
+    "items": []
   },
   "changedFiles": [
+    "backend/main.mo",
     "build-request.json",
     "feature_evidence.json",
-    "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
-    "frontend/admin.html",
-    "frontend/index.html",
-    "frontend/public/assets/generated/swaraj-infotech-logo-poster.dim_1080x1920.png",
-    "frontend/public/assets/generated/swaraj-infotech-logo.dim_1024x1024.png",
-    "frontend/src/admin/auth/AdminLoginScreen.tsx",
-    "frontend/src/admin/components/AdminShell.tsx",
-    "frontend/src/components/BrandHeader.tsx",
-    "frontend/src/components/SplashScreen.tsx",
-    "frontend/src/components/auth/AuthFooter.tsx",
-    "frontend/src/components/auth/OtpAuthFlow.tsx",
-    "frontend/src/config/brand.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

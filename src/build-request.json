@@ -1,67 +1,29 @@
 {
   "kind": "build_request",
-  "title": "Apply newly uploaded Swaraj Infotech logo everywhere and remove all Caffeine AI branding",
+  "title": "Build current app state (dummy OTP auto-verify and direct dashboard access)",
   "priority": "normal",
-  "requirements": [
-    {
-      "id": "REQ-78",
-      "text": "Add the two newly uploaded logo images (1770580116347.png and 1770580116347-1.png) into the frontend as static assets under `frontend/public/assets/generated/`, then update the learner app to use the new logo asset everywhere the current logo is used (including the splash screen and header). Ensure all updated `img alt` text and any related user-facing text remains in English.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-10",
-          "msg-13"
-        ],
-        "quotes": [
-          "Use this logo all over the app instead old logo add to splash screen also",
-          "Build now"
-        ]
-      },
-      "acceptanceCriteria": [
-        "Both uploaded image files are committed under `frontend/public/assets/generated/` (either as-is or as converted/cropped derivatives), and are referenced directly from the UI (not via backend).",
-        "`frontend/src/components/BrandHeader.tsx` no longer references the old logo path and displays the newly uploaded logo.",
-        "`frontend/src/components/SplashScreen.tsx` no longer references the old logo path and displays the newly uploaded logo.",
-        "No other learner-app screens show the previous logo asset anywhere (header areas, cards, empty states, etc.).",
-        "All user-facing text related to the logo (e.g., alt text) is in English."
-      ]
-    },
-    {
-      "id": "REQ-79",
-      "text": "Remove all \"Caffeine AI\" branding from the entire frontend (learner app and Admin Panel), including any visible labels, footer text, watermarks, or links that mention Caffeine or Caffeine AI, while keeping all other app branding as Swaraj Infotech and ensuring all user-facing text remains in English.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-10",
-          "msg-13"
-        ],
-        "quotes": [
-          "And remove the caffeine ai branding from all over the app",
-          "Build now"
-        ]
-      },
-      "acceptanceCriteria": [
-        "A repo-wide search in the frontend codebase shows no remaining user-visible references to \"Caffeine\" or \"Caffeine AI\".",
-        "Learner app UI contains no Caffeine/Caffeine AI branding in headers, footers, splash screen, login flow, dashboard, or settings/profile areas.",
-        "Admin Panel UI contains no Caffeine/Caffeine AI branding in its login screen, shell/header/sidebar, or any admin screens.",
-        "All user-facing text remains in English after removals."
-      ]
-    }
-  ],
+  "requirements": [],
   "constraints": [
-    "Frontend files listed in `SYSTEM_CONTEXT.frontend.immutablePaths` must not be edited; implement changes by updating other files and composing existing components.",
-    "Do not route images through the backend; reference logo assets directly from `frontend/public/assets/generated`.",
-    "Backend must remain a single Motoko actor in `backend/main.mo`; no new backend services."
+    "Keep all user-facing text in English.",
+    "Do not edit any files under frontend/src/components/ui or any other immutable frontend paths listed in SYSTEM_CONTEXT.",
+    "Backend must remain a single Motoko actor in backend/main.mo; only add backend/migration.mo if state migration is required."
   ],
   "nonGoals": [
-    "Providing or changing the deployed production URL for “Version 11”.",
-    "Generating downloadable Android build artifacts (e.g., signed AAB/APK).",
-    "Changing authentication logic, backend APIs, or database/state schema (not required for logo/branding removal)."
+    "Do not add new product features beyond what is already implemented (this request is a build trigger only).",
+    "Do not change authentication design from the current dummy-OTP flow unless explicitly requested."
   ],
   "imageRequirements": {
-    "required": [
-      "Square neon-orange circuit 'SI' emblem on dark metallic/black background (swaraj-infotech-logo.dim_1024x1024.png)",
-      "Portrait logo poster with neon-orange circuit 'SI' emblem and 'SWARAJ INFOTECH' wordmark on dark metallic/black background (swaraj-infotech-logo-poster.dim_1080x1920.png)"
-    ],
+    "required": [],
     "edits": []
+  },
+  "userProfileUpdate": {
+    "goalsToAdd": [],
+    "goalsToRemove": [],
+    "preferencesToAdd": [],
+    "preferencesToRemove": [],
+    "miscToAdd": [],
+    "miscToRemove": [],
+    "fieldsToSet": {},
+    "fieldsToDelete": []
   }
 }

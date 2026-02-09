@@ -12,9 +12,7 @@ import Random "mo:core/Random";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
-
-
-actor {
+(actor {
   module DataModel {
     public type UserId = Nat;
     public type QuestionId = Nat;
@@ -471,8 +469,8 @@ actor {
     count;
   };
 
-  // Public: Get Questions (for learners)
-  public query func getQuestions(course : ?Text, chapter : ?Text, limit : ?Nat, offset : ?Nat) : async [DataModel.Question] {
+  // Public: Get Questions (for learners) - Returns questions WITHOUT answers for non-authenticated users
+  public query ({ caller }) func getQuestions(course : ?Text, chapter : ?Text, limit : ?Nat, offset : ?Nat) : async [DataModel.Question] {
     var filteredQuestions = List.fromIter<DataModel.Question>(questions.values());
 
     switch (course) {
@@ -505,7 +503,27 @@ actor {
         case (null) {};
         case (?q) {
           if (i >= start) {
-            result.add(q);
+            // For non-authenticated users (guests), hide the answer field
+            if (not AccessControl.hasPermission(accessControlState, caller, #user)) {
+              let sanitizedQuestion : DataModel.Question = {
+                id = q.id;
+                course = q.course;
+                chapter = q.chapter;
+                difficulty = q.difficulty;
+                question = q.question;
+                optionA = q.optionA;
+                optionB = q.optionB;
+                optionC = q.optionC;
+                optionD = q.optionD;
+                answer = ""; // Hide answer from guests
+                hint = q.hint;
+                explanation = ""; // Hide explanation from guests
+                createdAt = q.createdAt;
+              };
+              result.add(sanitizedQuestion);
+            } else {
+              result.add(q);
+            };
           };
         };
       };
@@ -1046,7 +1064,7 @@ actor {
     };
 
     if (caller != owner) {
-      Runtime.trap("Unauthorized: Can only submit your own exam attempts");
+      Runtime.trap("Unauthorized: Only can submit your own exam attempts");
     };
 
     let attempt = switch (attempts.get(attemptId)) {
@@ -1193,4 +1211,5 @@ actor {
 
     analyticsEvents.toArray();
   };
-};
+});
+

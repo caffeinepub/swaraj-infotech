@@ -41,7 +41,7 @@ export function useOtpSession() {
     const setError = (error: string) => {
         setAuthError(error);
         if (error) {
-            // If there's an auth error, clear the session
+            // Clear session on auth error to allow retry
             logout();
         }
     };

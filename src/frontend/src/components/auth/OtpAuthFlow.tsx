@@ -1,19 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Phone, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
+import { Phone, ArrowRight, AlertCircle } from 'lucide-react';
 import { validatePhoneNumber, normalizePhoneNumber } from '@/utils/phone';
 import { useOtpSession } from '@/hooks/useOtpSession';
 import { useSendOtp, useVerifyOtp } from '@/hooks/useQueries';
-import CreateProfileForm from './CreateProfileForm';
 import AuthFooter from './AuthFooter';
 import { BRAND_CONFIG } from '../../config/brand';
+import { DUMMY_OTP, AUTO_VERIFY_DELAY } from '../../config/auth';
+import { ROUTES } from '../../routes';
 
-type Step = 'phone' | 'otp' | 'profile';
+type Step = 'phone' | 'otp';
 
 export default function OtpAuthFlow() {
     const [step, setStep] = useState<Step>('phone');
@@ -21,11 +22,22 @@ export default function OtpAuthFlow() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [otp, setOtp] = useState('');
     const [error, setError] = useState('');
-    const [isNewUser, setIsNewUser] = useState(false);
+    const [isAutoVerifying, setIsAutoVerifying] = useState(false);
 
     const { login, authError } = useOtpSession();
     const sendOtpMutation = useSendOtp();
     const verifyOtpMutation = useVerifyOtp();
+
+    // Auto-verify when OTP is auto-filled
+    useEffect(() => {
+        if (step === 'otp' && otp === DUMMY_OTP && !isAutoVerifying && !verifyOtpMutation.isPending) {
+            setIsAutoVerifying(true);
+            const timer = setTimeout(() => {
+                handleVerifyOtp();
+            }, AUTO_VERIFY_DELAY);
+            return () => clearTimeout(timer);
+        }
+    }, [otp, step, isAutoVerifying, verifyOtpMutation.isPending]);
 
     const handleSendOtp = async () => {
         setError('');
@@ -41,6 +53,10 @@ export default function OtpAuthFlow() {
         try {
             await sendOtpMutation.mutateAsync(fullPhone);
             setStep('otp');
+            // Auto-fill dummy OTP immediately after successful send
+            setTimeout(() => {
+                setOtp(DUMMY_OTP);
+            }, 100);
         } catch (err: any) {
             setError(err.message || 'Failed to send OTP. Please try again.');
         }
@@ -51,6 +67,7 @@ export default function OtpAuthFlow() {
         
         if (otp.length !== 6) {
             setError('Please enter a valid 6-digit OTP');
+            setIsAutoVerifying(false);
             return;
         }
 
@@ -60,31 +77,14 @@ export default function OtpAuthFlow() {
             const result = await verifyOtpMutation.mutateAsync({ phoneNumber: fullPhone, otp });
             login(result.token, fullPhone);
             
-            if (result.isNew) {
-                setIsNewUser(true);
-                setStep('profile');
-            }
-            // If not new user, App.tsx will handle routing to home
+            // Navigate directly to dashboard after successful login
+            window.location.hash = ROUTES.DASHBOARD.path;
         } catch (err: any) {
             setError(err.message || 'Invalid or expired OTP. Please try again.');
+            setIsAutoVerifying(false);
+            // Clear OTP on error to allow retry
+            setOtp('');
         }
-    };
-
-    const handleResendOtp = async () => {
-        setError('');
-        setOtp('');
-        
-        const fullPhone = normalizePhoneNumber(countryCode, phoneNumber);
-        
-        try {
-            await sendOtpMutation.mutateAsync(fullPhone);
-        } catch (err: any) {
-            setError(err.message || 'Failed to resend OTP. Please try again.');
-        }
-    };
-
-    const handleProfileComplete = () => {
-        // Profile saved, App.tsx will route to home
     };
 
     return (
@@ -188,9 +188,14 @@ export default function OtpAuthFlow() {
                     {step === 'otp' && (
                         <div className="space-y-6">
                             <div className="text-center mb-6">
-                                <h2 className="text-2xl font-bold mb-2">Enter OTP</h2>
+                                <h2 className="text-2xl font-bold mb-2">
+                                    {isAutoVerifying || verifyOtpMutation.isPending ? 'Verifying...' : 'Enter OTP'}
+                                </h2>
                                 <p className="text-muted-foreground">
-                                    We've sent a code to {countryCode} {phoneNumber}
+                                    {isAutoVerifying || verifyOtpMutation.isPending 
+                                        ? 'Please wait while we verify your code'
+                                        : `We've sent a code to ${countryCode} ${phoneNumber}`
+                                    }
                                 </p>
                             </div>
 
@@ -199,7 +204,7 @@ export default function OtpAuthFlow() {
                                     maxLength={6}
                                     value={otp}
                                     onChange={setOtp}
-                                    disabled={verifyOtpMutation.isPending}
+                                    disabled={verifyOtpMutation.isPending || isAutoVerifying}
                                 >
                                     <InputOTPGroup>
                                         <InputOTPSlot index={0} />
@@ -212,66 +217,40 @@ export default function OtpAuthFlow() {
                                 </InputOTP>
                             </div>
 
-                            <Button
-                                className="w-full gradient-orange shadow-glow-sm hover:shadow-glow font-semibold py-6 rounded-xl transition-all duration-300 hover:scale-105"
-                                onClick={handleVerifyOtp}
-                                disabled={verifyOtpMutation.isPending || otp.length !== 6}
-                            >
-                                {verifyOtpMutation.isPending ? (
-                                    <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                                        Verifying...
-                                    </>
-                                ) : (
-                                    <>
+                            {(isAutoVerifying || verifyOtpMutation.isPending) && (
+                                <div className="flex justify-center">
+                                    <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                </div>
+                            )}
+
+                            {!isAutoVerifying && !verifyOtpMutation.isPending && (
+                                <>
+                                    <Button
+                                        className="w-full gradient-orange shadow-glow-sm hover:shadow-glow font-semibold py-6 rounded-xl transition-all duration-300 hover:scale-105"
+                                        onClick={handleVerifyOtp}
+                                        disabled={otp.length !== 6}
+                                    >
                                         Verify OTP
                                         <ArrowRight className="ml-2 h-5 w-5" />
-                                    </>
-                                )}
-                            </Button>
+                                    </Button>
 
-                            <div className="text-center">
-                                <Button
-                                    variant="ghost"
-                                    className="text-muted-foreground hover:text-primary"
-                                    onClick={handleResendOtp}
-                                    disabled={sendOtpMutation.isPending}
-                                >
-                                    {sendOtpMutation.isPending ? (
-                                        <>
-                                            <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin mr-2" />
-                                            Resending...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <RefreshCw className="mr-2 h-4 w-4" />
-                                            Resend OTP
-                                        </>
-                                    )}
-                                </Button>
-                            </div>
-
-                            <div className="text-center">
-                                <Button
-                                    variant="ghost"
-                                    className="text-sm text-muted-foreground hover:text-primary"
-                                    onClick={() => {
-                                        setStep('phone');
-                                        setOtp('');
-                                        setError('');
-                                    }}
-                                >
-                                    Change Phone Number
-                                </Button>
-                            </div>
+                                    <div className="text-center">
+                                        <Button
+                                            variant="ghost"
+                                            className="text-sm text-muted-foreground hover:text-primary"
+                                            onClick={() => {
+                                                setStep('phone');
+                                                setOtp('');
+                                                setError('');
+                                                setIsAutoVerifying(false);
+                                            }}
+                                        >
+                                            Change Phone Number
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
                         </div>
-                    )}
-
-                    {step === 'profile' && isNewUser && (
-                        <CreateProfileForm 
-                            phoneNumber={normalizePhoneNumber(countryCode, phoneNumber)} 
-                            onComplete={handleProfileComplete} 
-                        />
                     )}
                 </div>
 

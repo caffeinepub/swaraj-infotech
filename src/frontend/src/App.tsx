@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useOtpSession } from './hooks/useOtpSession';
-import { useGetCallerUserProfile } from './hooks/useQueries';
 import { useHashRoute } from './hooks/useHashRoute';
 import { useRecordAppOpen } from './hooks/useAnalytics';
 import { ROUTES } from './routes';
 import SplashScreen from './components/SplashScreen';
 import OtpAuthFlow from './components/auth/OtpAuthFlow';
-import CreateProfileForm from './components/auth/CreateProfileForm';
 import AuthenticatedShell from './components/layout/AuthenticatedShell';
 import CourseDashboard from './screens/CourseDashboard';
 import PracticeModeScreen from './screens/PracticeModeScreen';
@@ -22,11 +20,10 @@ import FeedbackScreen from './screens/FeedbackScreen';
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const { isAuthenticated, phoneNumber, logout } = useOtpSession();
-  const { data: userProfile, isLoading: profileLoading, isFetched } = useGetCallerUserProfile();
+  const { isAuthenticated, logout } = useOtpSession();
   const { currentRoute } = useHashRoute();
   
-  // Record app open event when user is authenticated and profile is loaded
+  // Record app open event when user is authenticated
   useRecordAppOpen();
 
   useEffect(() => {
@@ -42,17 +39,7 @@ export default function App() {
     return <OtpAuthFlow />;
   }
 
-  const showProfileSetup = isAuthenticated && !profileLoading && isFetched && userProfile === null;
-
-  if (showProfileSetup) {
-    return (
-      <CreateProfileForm 
-        phoneNumber={phoneNumber || ''} 
-        onComplete={() => window.location.reload()} 
-      />
-    );
-  }
-
+  // Authenticated users go directly to dashboard (no profile gating)
   const renderScreen = () => {
     switch (currentRoute) {
       case ROUTES.DASHBOARD.path:

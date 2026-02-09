@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 25,
-  "summary": "Design a modern premium Android UI for the Swaraj Infotech app (dark theme, bright orange gradient accents, glassmorphism floating cards, rounded corners, soft shadows, clean typography, smooth animations, splash screen with centered logo + animated orange gradient ring), update all branding and logos to “Swaraj Infotech”, remove all Caffeine AI branding from the app, implement an OTP-based phone authentication flow (phone input → request OTP → enter/resend OTP → new-user profile creation) that routes to Home after login, and implement a Questions engine + Practice Mode (chapter selection, question list, question view with hint/answer/explanation, bookmarking, progress, offline cache) backed by questions and user-answer APIs, plus a Chapter Test flow (chapter selection → timed randomized test with mark-for-review → submit → results + review → history) backed by /test APIs, and add an Exam Mode with strict real-exam simulation for MSCIT (15 questions/15 min) and GCC-TBC (25 questions/25 min) including timer auto-submit, mark-for-review, no repeats within an attempt, results + weak chapters, and attempt history/review backed by /exam APIs. Additionally, build a separate standalone Admin Panel web dashboard with secure admin login (email/password, optional 2FA), role-based access (admin/moderator), full question/chapters/categories management (add/edit/delete/search/filter), bulk question upload via CSV with preview/validation and sample CSV template, users & results management (user list, test history, export CSV), in-app notifications composer, and backend backup/restore via JSON export/import with API endpoints for all admin operations. Also provide production-ready PostgreSQL DDL for documentation and mirror/emulate the same table-like schema inside the Motoko canister implementation, including Postgres-style middleware concepts (rate limiting and logging). Add viral & utility features: WhatsApp share with prefilled text + Play Store link, optional referral codes, push notifications for daily quiz reminders/new content, analytics dashboards (downloads/active users/retention), and an in-app feedback form to send to an admin email.",
+  "projectStateVersion": 29,
+  "summary": "Design a modern premium Android UI for the Swaraj Infotech app (dark theme, bright orange gradient accents, glassmorphism floating cards, rounded corners, soft shadows, clean typography, smooth animations, splash screen with centered logo + animated orange gradient ring), update all branding and logos to “Swaraj Infotech”, remove all Caffeine AI branding from the app, implement an OTP-based phone authentication flow that is currently requested to be restored to Version/Draft 12 and modified to use a dummy auto-success OTP with auto-fill and then route users directly to the Dashboard (skipping profile creation), and implement a Questions engine + Practice Mode (chapter selection, question list, question view with hint/answer/explanation, bookmarking, progress, offline cache) backed by questions and user-answer APIs, plus a Chapter Test flow (chapter selection → timed randomized test with mark-for-review → submit → results + review → history) backed by /test APIs, and add an Exam Mode with strict real-exam simulation for MSCIT (15 questions/15 min) and GCC-TBC (25 questions/25 min) including timer auto-submit, mark-for-review, no repeats within an attempt, results + weak chapters, and attempt history/review backed by /exam APIs. Additionally, build a separate standalone Admin Panel web dashboard with secure admin login (email/password, optional 2FA), role-based access (admin/moderator), full question/chapters/categories management (add/edit/delete/search/filter), bulk question upload via CSV with preview/validation and sample CSV template, users & results management (user list, test history, export CSV), in-app notifications composer, and backend backup/restore via JSON export/import with API endpoints for all admin operations. Also provide production-ready PostgreSQL DDL for documentation and mirror/emulate the same table-like schema inside the Motoko canister implementation, including Postgres-style middleware concepts (rate limiting and logging). Add viral & utility features: WhatsApp share with prefilled text + Play Store link, optional referral codes, push notifications for daily quiz reminders/new content, analytics dashboards (downloads/active users/retention), and an in-app feedback form to send to an admin email.",
   "architectural_notes": [
     "OTP auth flow decisions: create profile only for new users after OTP verification; SMS stub endpoint always succeeds; post-login route goes to Home.",
     "Persist auth token locally after successful OTP verification.",
@@ -18,7 +18,6 @@
     "Deployment fails immediately with message containing \"no draft\" (user reports no additional logs)."
   ],
   "isFixRequest": true,
-  "imageRequirements": "## Required Images\n- Square neon-orange circuit 'SI' emblem on dark metallic/black background (swaraj-infotech-logo.dim_1024x1024.png)\n- Portrait logo poster with neon-orange circuit 'SI' emblem and 'SWARAJ INFOTECH' wordmark on dark metallic/black background (swaraj-infotech-logo-poster.dim_1080x1920.png)",
   "existing_features": [
     {
       "id": "feature-create-a-cohesive-premium-android-style-visual-theme-for-the-app-named-swaraj-it-using-dark-black-background-bright-orange-gradient-accents-floating-glassmorphic-cards-rounded-corners-soft-shadows-clean-typography-and-smooth-animations-consistent-with-ultra-modern-fintech-apps-ensure-all-user-facing-text-is-in-english",
@@ -507,6 +506,38 @@
         "REQ-79"
       ],
       "version": 1
+    },
+    {
+      "id": "feature-restore-the-deployed-app-to-draft-version-12-so-that-the-running-learner-app-behavior-matches-what-was-in-version-12-before-any-later-changes",
+      "title": "Restore the deployed app to Draft/Version 12 so that the running learner app behavior matches what was in Version 12 before any later changes.",
+      "reqIds": [
+        "REQ-80"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-modify-the-otp-authentication-behavior-to-a-dummy-flow-after-a-user-enters-a-valid-phone-number-automatically-issue-accept-a-dummy-otp-no-real-sms-and-complete-login-successfully-for-any-phone-number",
+      "title": "Modify the OTP authentication behavior to a dummy flow: after a user enters a valid phone number, automatically issue/accept a dummy OTP (no real SMS) and complete login successfully for any phone number.",
+      "reqIds": [
+        "REQ-81"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-update-the-learner-app-otp-ui-flow-so-the-dummy-otp-is-auto-filled-and-verification-is-auto-triggered-with-appropriate-loading-and-error-ui-and-then-navigates-the-user-into-the-authenticated-app-experience",
+      "title": "Update the learner app OTP UI flow so the dummy OTP is auto-filled and verification is auto-triggered, with appropriate loading and error UI, and then navigates the user into the authenticated app experience.",
+      "reqIds": [
+        "REQ-82"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-after-dummy-otp-login-success-route-users-directly-to-the-course-dashboard-and-do-not-block-entry-on-missing-profile-skip-the-create-profile-screen-even-for-first-time-users",
+      "title": "After dummy OTP login success, route users directly to the Course Dashboard and do not block entry on missing profile (skip the Create Profile screen even for first-time users).",
+      "reqIds": [
+        "REQ-83"
+      ],
+      "version": 1
     }
   ],
   "new_feature_requests": [
@@ -891,6 +922,18 @@
     {
       "id": "AR-61",
       "summary": "Remove all Caffeine AI branding from the app UI (headers/footers/watermarks/text) while keeping Swaraj Infotech branding.",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-62",
+      "summary": "Rollback/restore deployment to Version 12 (revert current production to Draft Version 12).",
+      "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-63",
+      "summary": "Change OTP login to dummy auto-success OTP with auto-fill behavior and always allow access after entering phone number; after OTP success route directly to Dashboard (skip new-user profile creation).",
       "reqIds": [],
       "status": "pending"
     }
